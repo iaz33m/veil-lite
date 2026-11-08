@@ -35,7 +35,7 @@ sha2 = "0.10"
 hex = "0.4"
 directories = "6"
 interprocess = "2"
-rand = "0.9"
+rand = "0.10"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 quick-xml = "0.37"
 pdf-extract = "0.9"

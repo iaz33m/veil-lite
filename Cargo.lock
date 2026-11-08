@@ -3397,7 +3397,7 @@ dependencies = [
  "interprocess",
  "libc",
  "parking_lot",
- "rand 0.9.5",
+ "rand 0.10.3",
  "serde",
  "serde_json",
  "tempfile",
