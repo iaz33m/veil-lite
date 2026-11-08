@@ -19,7 +19,7 @@ libc = "0.2"
 # Kernel input: grab real devices, re-emit through uinput.
 evdev = "0.13"
 # X11: active window, window under pointer, XDND selection, activation. Pure Rust.
-x11rb = { version = "0.13", features = ["xfixes"] }
+x11rb = { version = "0.14", features = ["xfixes"] }
 # AT-SPI over the accessibility bus. Pure Rust D-Bus (no libdbus).
 zbus = { version = "5", default-features = false, features = ["async-io", "blocking-api"] }
 # Clipboard (X11 + wlr/ext data-control on Wayland). Pure Rust.
