@@ -69,7 +69,7 @@ jobs:
           esac
 
       - name: Upload engine
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: veil-engine-${{ runner.os }}
           path: |
@@ -186,7 +186,7 @@ jobs:
           projectPath: apps/desktop
           includeUpdaterJson: false
           args: ${{ matrix.args }}${{ matrix.target == 'universal-apple-darwin' && secrets.APPLE_CERTIFICATE == '' && ' --no-sign' || '' }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: veil-desktop-${{ matrix.target }}
           path: |
