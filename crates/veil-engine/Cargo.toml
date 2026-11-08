@@ -39,3 +39,6 @@ veil-platform-linux.workspace = true
 [dev-dependencies]
 veil-core = { workspace = true, features = ["testing"] }
 tempfile = "3"
+
+[build-dependencies]
+embed-manifest = "1.5"

@@ -11,6 +11,7 @@ anyhow.workspace = true
 veil-core.workspace = true
 
 [target.'cfg(windows)'.dependencies]
+# Versions pinned for API stability; every binding used was checked against these exact sources.
 tracing.workspace = true
 parking_lot.workspace = true
 crossbeam-channel.workspace = true
@@ -20,6 +21,7 @@ windows = { version = "0.62.2", features = [
     "Win32_Security",
     "Win32_Storage_FileSystem",
     "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
     "Win32_System_DataExchange",
     "Win32_System_LibraryLoader",
     "Win32_System_Memory",
