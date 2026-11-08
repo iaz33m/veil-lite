@@ -1,0 +1,11 @@
+[package]
+name = "veil-platform-linux"
+description = "Veil platform provider for Linux (X11 and Wayland)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+veil-core.workspace = true

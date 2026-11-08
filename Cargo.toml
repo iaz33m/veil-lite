@@ -1,13 +1,13 @@
 [workspace]
 resolver = "2"
-members = ["crates/veil-core"]
+members = ["crates/*"]
 exclude = ["apps/desktop/src-tauri"]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
-rust-version = "1.85"
+rust-version = "1.92"
 authors = ["Veil contributors"]
 repository = "https://github.com/veil-dlp/veil"
 
@@ -40,9 +40,9 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 quick-xml = "0.37"
 pdf-extract = "0.9"
 redact-core = "0.12"
-ort = { version = "=2.0.0-rc.10", default-features = false, features = ["load-dynamic", "ndarray"] }
-tokenizers = { version = "0.21", default-features = false, features = ["fancy-regex"] }
-ndarray = "0.16"
+ort = { version = "=2.0.0-rc.15", default-features = false, features = ["std", "ndarray", "load-dynamic", "api-20"] }
+tokenizers = { version = "0.22", default-features = false, features = ["fancy-regex"] }
+ndarray = "0.17"
 
 [profile.release]
 lto = "thin"

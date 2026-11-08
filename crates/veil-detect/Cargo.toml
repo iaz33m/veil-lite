@@ -1,0 +1,11 @@
+[package]
+name = "veil-detect"
+description = "Veil detection layers: keywords, personal-data patterns, file extraction, on-device AI checks"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+veil-core.workspace = true

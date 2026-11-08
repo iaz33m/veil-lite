@@ -506,6 +506,56 @@ dependencies = [
 ]
 
 [[package]]
+name = "veil-detect"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "veil-core",
+]
+
+[[package]]
+name = "veil-engine"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "veil-core",
+]
+
+[[package]]
+name = "veil-ipc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+ "veil-core",
+]
+
+[[package]]
+name = "veil-platform-linux"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "veil-core",
+]
+
+[[package]]
+name = "veil-platform-macos"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "veil-core",
+]
+
+[[package]]
+name = "veil-platform-windows"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "veil-core",
+]
+
+[[package]]
 name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
