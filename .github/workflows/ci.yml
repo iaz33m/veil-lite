@@ -1,0 +1,207 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      tauri_build:
+        description: Also build desktop installers
+        type: boolean
+        default: false
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  rust:
+    name: Rust (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Linux system packages
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libudev-dev libdbus-1-dev libxkbcommon-dev
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace
+
+      - name: Build engine (release)
+        run: cargo build --release -p veil-engine
+
+      # Each platform crate only has real code on its own OS; check it natively here so the
+      # provider compiles even when the other tests don't exercise it.
+      - name: Check native platform provider
+        shell: bash
+        run: |
+          case "${{ runner.os }}" in
+            macOS)   cargo check -p veil-platform-macos --all-targets ;;
+            Windows) cargo check -p veil-platform-windows --all-targets --target x86_64-pc-windows-msvc ;;
+            Linux)   cargo check -p veil-platform-linux --all-targets ;;
+          esac
+
+      - name: Upload engine
+        uses: actions/upload-artifact@v4
+        with:
+          name: veil-engine-${{ runner.os }}
+          path: |
+            target/release/veil-engine
+            target/release/veil-engine.exe
+          if-no-files-found: ignore
+          retention-days: 7
+
+  macos-intel:
+    name: Rust (macOS x86_64 cross-check)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check -p veil-engine --target x86_64-apple-darwin
+
+  # Early warning for provider code written on another OS. Build scripts that compile C for the
+  # target may not work cross-host, so this job is advisory.
+  cross-check:
+    name: Cross-check providers from Linux (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc, aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check -p veil-platform-windows --target x86_64-pc-windows-msvc
+      - run: cargo check -p veil-platform-macos --target aarch64-apple-darwin
+
+  fixtures:
+    name: Fixtures are up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 tests/fixtures/make_fixtures.py
+      - run: git diff --exit-code -- tests/fixtures
+
+  frontend:
+    name: Desktop UI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: Check
+        run: npm run check --if-present
+      - name: Build
+        run: npm run build
+
+  tauri:
+    name: Desktop app (${{ matrix.platform }})
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.tauri_build)
+    needs: [rust, frontend]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            target: universal-apple-darwin
+            args: --target universal-apple-darwin
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            args: ""
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            args: ""
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target == 'universal-apple-darwin' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+            apps/desktop/src-tauri -> target
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Linux system packages
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libudev-dev libdbus-1-dev libxkbcommon-dev \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - name: Sidecar and ONNX Runtime
+        shell: bash
+        run: |
+          scripts/prepare-sidecar.sh --release --target ${{ matrix.target }}
+          scripts/fetch-onnxruntime.sh --target ${{ matrix.target }}
+      - name: Install UI dependencies
+        working-directory: apps/desktop
+        run: npm ci || npm install
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Placeholders: unsigned builds when the secrets are absent.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          projectPath: apps/desktop
+          args: ${{ matrix.args }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: veil-desktop-${{ matrix.target }}
+          path: |
+            apps/desktop/src-tauri/target/**/release/bundle/**/*.dmg
+            apps/desktop/src-tauri/target/**/release/bundle/**/*.msi
+            apps/desktop/src-tauri/target/**/release/bundle/**/*.exe
+            apps/desktop/src-tauri/target/**/release/bundle/**/*.deb
+            apps/desktop/src-tauri/target/**/release/bundle/**/*.rpm
+            apps/desktop/src-tauri/target/**/release/bundle/**/*.AppImage
+          if-no-files-found: warn
+          retention-days: 14

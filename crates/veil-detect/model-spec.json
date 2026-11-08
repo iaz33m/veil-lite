@@ -1,0 +1,27 @@
+{
+  "id": "gliner2.5-multi-decide-int8",
+  "version": "0.1.0",
+  "published": false,
+  "license": "Apache-2.0",
+  "source": "GLiNER2.5-multi-Decide (Apache-2.0), exported to ONNX and quantized to int8 by tools/model-export",
+  "files": [
+    {
+      "name": "manifest.json",
+      "url": "https://huggingface.co/veil-dlp/gliner2.5-multi-decide-onnx/resolve/main/manifest.json",
+      "sha256": "",
+      "size": 0
+    },
+    {
+      "name": "tokenizer.json",
+      "url": "https://huggingface.co/veil-dlp/gliner2.5-multi-decide-onnx/resolve/main/tokenizer.json",
+      "sha256": "",
+      "size": 0
+    },
+    {
+      "name": "model.int8.onnx",
+      "url": "https://huggingface.co/veil-dlp/gliner2.5-multi-decide-onnx/resolve/main/model.int8.onnx",
+      "sha256": "",
+      "size": 0
+    }
+  ]
+}

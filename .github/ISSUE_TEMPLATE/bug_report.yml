@@ -1,0 +1,56 @@
+name: Bug report
+description: Something doesn't work as documented.
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Never paste real secrets, personal data or confidential text.** Describe its shape and use the
+        fake values from `tests/fixtures/` instead. Issues containing real data are deleted.
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [macOS, Windows, Linux (X11), Linux (Wayland)]
+    validations: { required: true }
+  - type: input
+    id: os_version
+    attributes:
+      label: OS version and architecture
+      placeholder: macOS 15.1 (Apple silicon) / Windows 11 24H2 x64 / Ubuntu 24.04 GNOME Wayland
+    validations: { required: true }
+  - type: input
+    id: veil_version
+    attributes:
+      label: Veil version or commit
+    validations: { required: true }
+  - type: input
+    id: app
+    attributes:
+      label: App (and site, for browsers)
+      placeholder: Slack 4.41 / Chrome 131 on chatgpt.com / Cursor 0.45
+    validations: { required: true }
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Channel
+      multiple: true
+      options: [Typing warning, Enter / Send, Paste, Drag and drop, File picker upload, Image (OCR), Tray / settings / setup wizard, Other]
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Ideally with tests/harness/test-chat.html.
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations: { required: true }
+  - type: textarea
+    id: logs
+    attributes:
+      label: engine.log excerpt
+      description: The log never contains content, but please check before pasting.
+      render: text
