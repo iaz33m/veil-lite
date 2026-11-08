@@ -1,0 +1,51 @@
+[workspace]
+resolver = "2"
+members = ["crates/veil-core"]
+exclude = ["apps/desktop/src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+rust-version = "1.85"
+authors = ["Veil contributors"]
+repository = "https://github.com/veil-dlp/veil"
+
+[workspace.dependencies]
+veil-core = { path = "crates/veil-core" }
+veil-detect = { path = "crates/veil-detect" }
+veil-ipc = { path = "crates/veil-ipc" }
+veil-platform-macos = { path = "crates/veil-platform-macos" }
+veil-platform-windows = { path = "crates/veil-platform-windows" }
+veil-platform-linux = { path = "crates/veil-platform-linux" }
+
+anyhow = "1"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml_ng = "0.10"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+crossbeam-channel = "0.5"
+parking_lot = "0.12"
+regex = "1"
+aho-corasick = "1"
+unicode-normalization = "0.1"
+sha2 = "0.10"
+hex = "0.4"
+directories = "6"
+interprocess = "2"
+rand = "0.9"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+quick-xml = "0.37"
+pdf-extract = "0.9"
+redact-core = "0.12"
+ort = { version = "=2.0.0-rc.10", default-features = false, features = ["load-dynamic", "ndarray"] }
+tokenizers = { version = "0.21", default-features = false, features = ["fancy-regex"] }
+ndarray = "0.16"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+opt-level = 3
