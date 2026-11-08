@@ -764,7 +764,7 @@ impl Engine {
             std::thread::sleep(DRAG_SESSION_RETRY_DELAY);
         }
         let Some(session) = session else {
-            self.shared.set_drag_verdict(generation, DragVerdict::Clean);
+            self.shared.set_drag_verdict(generation, DragVerdict::NoData);
             return;
         };
         let text = session.text.as_deref().filter(|t| !t.trim().is_empty());
@@ -801,6 +801,8 @@ impl Engine {
         };
 
         match verdict {
+            // A text selection or window drag, not a drop of data: nothing to say.
+            DragVerdict::NoData => {}
             DragVerdict::Clean => {
                 if !may_have_landed {
                     // The drop was stopped only because the check had not finished: let the retry through.

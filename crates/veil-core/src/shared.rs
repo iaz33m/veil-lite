@@ -25,6 +25,8 @@ pub struct Hold {
 #[derive(Clone, Debug, PartialEq)]
 pub enum DragVerdict {
     Pending,
+    /// The press-and-move carried no readable drag data (e.g. a text selection): nothing to stop.
+    NoData,
     Clean,
     Dirty { findings: Vec<Finding>, action: Action, files: usize },
 }

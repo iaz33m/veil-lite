@@ -198,7 +198,7 @@ impl Interceptor {
             .app_at(at)
             .filter(|a| self.protected(a) && !self.shared.drops_allowed(&a.app_id))
             .is_some();
-        let clean = self.shared.drag_verdict(generation) == DragVerdict::Clean;
+        let clean = matches!(self.shared.drag_verdict(generation), DragVerdict::Clean | DragVerdict::NoData);
         let want = over_protected && !clean;
         if want != withheld {
             self.platform.set_drag_withheld(want);
@@ -233,7 +233,10 @@ impl Interceptor {
             return HookVerdict::Pass;
         }
         let verdict = self.shared.drag_verdict(drag.generation);
-        if verdict == DragVerdict::Clean {
+        if matches!(verdict, DragVerdict::Clean | DragVerdict::NoData) {
+            if drag.withheld {
+                self.platform.set_drag_withheld(false);
+            }
             return HookVerdict::Pass;
         }
 
