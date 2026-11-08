@@ -308,7 +308,8 @@ mod tests {
         let spaced = format!("{} {} {}", &s[..4], &s[4..8], &s[8..]);
         assert!(in_aadhaar(&spaced));
         let bad_check = (check + 1) % 10;
-        let bad: String = body.iter().chain(std::iter::once(&bad_check)).map(|d| char::from_digit(*d, 10).unwrap()).collect();
+        let bad: String =
+            body.iter().chain(std::iter::once(&bad_check)).map(|d| char::from_digit(*d, 10).unwrap()).collect();
         assert!(!in_aadhaar(&bad));
         assert!(!in_aadhaar("123412341234"), "cannot start with 1");
     }

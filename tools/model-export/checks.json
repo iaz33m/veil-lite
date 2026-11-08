@@ -1,0 +1,36 @@
+{
+  "task": "veil_dlp",
+  "multi_label": true,
+  "checks": [
+    {
+      "key": "secrets",
+      "label": "secrets",
+      "description": "passwords, API keys, access tokens, private keys, connection strings or other credentials"
+    },
+    {
+      "key": "personal_info",
+      "label": "personal information",
+      "description": "information about a specific person: names with contact details, addresses, ID numbers, health, financial or employment records"
+    },
+    {
+      "key": "confidential",
+      "label": "confidential business information",
+      "description": "internal or confidential company information: unreleased plans, financials, contracts, customer data, legal or HR matters"
+    },
+    {
+      "key": "source_code",
+      "label": "source code",
+      "description": "proprietary program source code, configuration or scripts"
+    }
+  ],
+  "samples": [
+    "What a lovely day for a walk in the park!",
+    "Can you help me write a birthday message for my sister?",
+    "Here is our prod config: DATABASE_URL=postgres://admin:S3cr3t!@db.internal:5432/app and AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    "Patient John Smith, DOB 04/07/1981, MRN 5521347, diagnosed with type 2 diabetes. Phone +1 415 555 0134.",
+    "CONFIDENTIAL — Q3 board deck: we plan to acquire Northwind for $42M before the announcement on Oct 12. Do not share.",
+    "fn transfer(&mut self, to: AccountId, amount: u128) -> Result<(), Error> { let fee = self.fee_schedule.compute(amount)?; self.ledger.debit(self.id, amount + fee)?; Ok(()) }",
+    "Resumen: el contrato con el cliente es confidencial y no debe compartirse fuera del equipo.",
+    "Bitte prüfen Sie den Quellcode: def berechne(x): return x * 2"
+  ]
+}

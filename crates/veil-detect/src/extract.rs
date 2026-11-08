@@ -250,8 +250,13 @@ fn office(bytes: &[u8]) -> Extracted {
     };
     let names = member_names(&zip);
     let wanted = |n: &str| {
-        (n.starts_with("word/") && n.ends_with(".xml") && !n.contains("/_rels/") && !n.ends_with("styles.xml")
-            && !n.ends_with("settings.xml") && !n.ends_with("fontTable.xml") && !n.ends_with("webSettings.xml")
+        (n.starts_with("word/")
+            && n.ends_with(".xml")
+            && !n.contains("/_rels/")
+            && !n.ends_with("styles.xml")
+            && !n.ends_with("settings.xml")
+            && !n.ends_with("fontTable.xml")
+            && !n.ends_with("webSettings.xml")
             && !n.contains("theme"))
             || n == "xl/sharedStrings.xml"
             || (n.starts_with("xl/worksheets/") && n.ends_with(".xml"))
@@ -279,7 +284,8 @@ fn office(bytes: &[u8]) -> Extracted {
 
 /// "slide10.xml" sorts after "slide2.xml".
 fn natural_key(s: &str) -> (String, u64) {
-    let digits: String = s.chars().rev().skip_while(|c| !c.is_ascii_digit()).take_while(|c| c.is_ascii_digit()).collect();
+    let digits: String =
+        s.chars().rev().skip_while(|c| !c.is_ascii_digit()).take_while(|c| c.is_ascii_digit()).collect();
     let n = digits.chars().rev().collect::<String>().parse().unwrap_or(0);
     let prefix: String = s.chars().take_while(|c| !c.is_ascii_digit()).collect();
     (prefix, n)
@@ -473,7 +479,8 @@ mod tests {
         let s1 = br#"<p:sld><a:p><a:r><a:t>first</a:t></a:r></a:p></p:sld>"#;
         let s10 = br#"<p:sld><a:p><a:r><a:t>tenth</a:t></a:r></a:p></p:sld>"#;
         let s2 = br#"<p:sld><a:p><a:r><a:t>second</a:t></a:r></a:p></p:sld>"#;
-        let bytes = zip_with(&[("ppt/slides/slide10.xml", s10), ("ppt/slides/slide1.xml", s1), ("ppt/slides/slide2.xml", s2)]);
+        let bytes =
+            zip_with(&[("ppt/slides/slide10.xml", s10), ("ppt/slides/slide1.xml", s1), ("ppt/slides/slide2.xml", s2)]);
         let t = text_of(extract_bytes("deck.pptx", &bytes, 0, u64::MAX));
         let (a, b, c) = (t.find("first").unwrap(), t.find("second").unwrap(), t.find("tenth").unwrap());
         assert!(a < b && b < c, "{t:?}");
@@ -493,7 +500,11 @@ mod tests {
     #[test]
     fn archives_recurse_one_level() {
         let inner = zip_with(&[("deep.txt", b"deep secret")]);
-        let bytes = zip_with(&[("notes.txt", b"top secret"), ("nested.zip", &inner), ("dir/pic.png", b"\x89PNG\r\n\x1a\nxxxx")]);
+        let bytes = zip_with(&[
+            ("notes.txt", b"top secret"),
+            ("nested.zip", &inner),
+            ("dir/pic.png", b"\x89PNG\r\n\x1a\nxxxx"),
+        ]);
         match extract_bytes("bundle.zip", &bytes, 0, u64::MAX) {
             Extracted::Many(parts) => {
                 assert_eq!(parts.len(), 3);
@@ -576,7 +587,9 @@ mod tests {
         for off in offsets {
             out.extend(format!("{off:010} 00000 n \n").bytes());
         }
-        out.extend(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objects.len() + 1).bytes());
+        out.extend(
+            format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objects.len() + 1).bytes(),
+        );
         out
     }
 }

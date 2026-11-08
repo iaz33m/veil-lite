@@ -1,0 +1,74 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Veil",
+  "version": "0.1.0",
+  "identifier": "dev.veil.app",
+  "build": {
+    "devUrl": "http://127.0.0.1:1420",
+    "frontendDist": "../dist",
+    "beforeDevCommand": "node scripts/prepare-sidecar.mjs --build && npm run dev",
+    "beforeBuildCommand": "npm run build && node scripts/prepare-sidecar.mjs --build --release"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Veil",
+        "width": 960,
+        "height": 720,
+        "minWidth": 600,
+        "minHeight": 520,
+        "center": true,
+        "visible": false,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      "freezePrototype": true
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "publisher": "Veil contributors",
+    "copyright": "Copyright © 2026 Veil contributors. Licensed under Apache-2.0.",
+    "category": "Utility",
+    "shortDescription": "Stops secrets and personal data from leaving your computer through AI chats and other apps.",
+    "longDescription": "Veil checks what you send, paste, drop or upload in any app, on your computer, before it leaves. Everything runs on-device; nothing is sent anywhere.",
+    "homepage": "https://github.com/veil-dlp/veil",
+    "license": "Apache-2.0",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "externalBin": ["binaries/veil-engine"],
+    "createUpdaterArtifacts": false,
+    "macOS": {
+      "minimumSystemVersion": "12.0"
+    },
+    "linux": {
+      "deb": {
+        "depends": ["zenity"],
+        "files": { "/usr/lib/udev/rules.d/99-veil.rules": "../../../packaging/linux/99-veil.rules" }
+      },
+      "rpm": {
+        "depends": ["zenity"],
+        "files": { "/usr/lib/udev/rules.d/99-veil.rules": "../../../packaging/linux/99-veil.rules" }
+      }
+    },
+    "windows": {
+      "nsis": { "installMode": "currentUser" }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": ["https://github.com/veil-dlp/veil/releases/latest/download/latest.json"],
+      "pubkey": "REPLACE_WITH_THE_UPDATER_PUBLIC_KEY"
+    }
+  }
+}

@@ -42,7 +42,8 @@ pub fn plan(backend: Backend, prompt: &Prompt) -> Plan {
         Backend::Zenity => {
             let text = escape_markup(&prompt.message);
             if others.is_empty() {
-                p.args = vec!["--warning".into(), "--title=Veil".into(), "--width=420".into(), format!("--text={text}")];
+                p.args =
+                    vec!["--warning".into(), "--title=Veil".into(), "--width=420".into(), format!("--text={text}")];
                 return p;
             }
             p.args = vec![
@@ -138,7 +139,12 @@ pub fn ask(prompt: &Prompt) -> Choice {
         Backend::Zenity => "zenity",
         Backend::Kdialog => "kdialog",
     };
-    match Command::new(program).args(&plan.args).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::null()).output()
+    match Command::new(program)
+        .args(&plan.args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .output()
     {
         Ok(out) => parse(&plan, out.status.code(), &String::from_utf8_lossy(&out.stdout)),
         Err(e) => {
@@ -174,7 +180,13 @@ mod tests {
     use veil_core::types::AppContext;
 
     fn prompt(kind: PromptKind, options: Vec<Choice>) -> Prompt {
-        Prompt { title: "Veil".into(), message: "Contains <b>secrets</b> & more".into(), app: AppContext::default(), kind, options }
+        Prompt {
+            title: "Veil".into(),
+            message: "Contains <b>secrets</b> & more".into(),
+            app: AppContext::default(),
+            kind,
+            options,
+        }
     }
 
     #[test]

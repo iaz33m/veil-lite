@@ -16,14 +16,16 @@ use veil_core::CheckId;
 
 const BATCH: usize = 8;
 
-static RUNTIME: OnceLock<Result<(), String>> = OnceLock::new();
+/// The process-wide ONNX Runtime environment (the library is loaded once; ort keeps it for the process).
+static RUNTIME: OnceLock<Result<ort::environment::Environment, String>> = OnceLock::new();
 
-/// Load ONNX Runtime from `dylib` once per process.
-pub fn init_runtime(dylib: &Path) -> anyhow::Result<()> {
+/// Load ONNX Runtime from `dylib` once per process and return its environment.
+pub fn init_runtime(dylib: &Path) -> anyhow::Result<ort::environment::Environment> {
     RUNTIME
         .get_or_init(|| {
-            let builder = ort::init_from(dylib).map_err(|e| format!("loading ONNX Runtime from {}: {e}", dylib.display()))?;
-            builder.with_name("veil").build().map(|_| ()).map_err(|e| format!("initialising ONNX Runtime: {e}"))
+            let builder =
+                ort::init_from(dylib).map_err(|e| format!("loading ONNX Runtime from {}: {e}", dylib.display()))?;
+            builder.with_name("veil").build().map_err(|e| format!("initialising ONNX Runtime: {e}"))
         })
         .clone()
         .map_err(|e| anyhow!(e))
@@ -40,8 +42,8 @@ impl DecideModel {
     pub fn load(dir: &Path, dylib: &Path, threads: usize) -> anyhow::Result<DecideModel> {
         let manifest = Manifest::load(dir)?;
         let tokenizer = load_tokenizer(&dir.join(&manifest.tokenizer))?;
-        init_runtime(dylib)?;
-        let session = Session::builder()
+        let env = init_runtime(dylib)?;
+        let session = Session::builder(&env)
             .map_err(|e| anyhow!("{e}"))?
             .with_optimization_level(GraphOptimizationLevel::Level3)
             .map_err(|e| anyhow!("{e}"))?

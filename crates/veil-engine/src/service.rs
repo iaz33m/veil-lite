@@ -222,7 +222,7 @@ impl Service {
         tracing::info!("model download started");
         let mut last = 0u8;
         let result = self.models.download(cancel, &mut |done, total| {
-            let pct = if total == 0 { 0 } else { (done.saturating_mul(100) / total).min(99) as u8 };
+            let pct = done.saturating_mul(100).checked_div(total).unwrap_or(0).min(99) as u8;
             if pct != last {
                 last = pct;
                 self.scanner.set_download_progress(Some(pct));

@@ -35,7 +35,10 @@ pub fn download_spec(
     agent: &ureq::Agent,
 ) -> anyhow::Result<()> {
     if !spec.published {
-        bail!("The Veil AI model ({}) has not been published yet. Keyword and personal-data checks still protect you.", spec.id);
+        bail!(
+            "The Veil AI model ({}) has not been published yet. Keyword and personal-data checks still protect you.",
+            spec.id
+        );
     }
     for f in &spec.files {
         if f.sha256.len() != 64 || f.size == 0 {
@@ -49,7 +52,9 @@ pub fn download_spec(
     progress(0, total);
     for f in &spec.files {
         let final_path = dir.join(&f.name);
-        if std::fs::metadata(&final_path).map(|m| m.len() == f.size).unwrap_or(false) && sha256_file(&final_path)? == f.sha256 {
+        if std::fs::metadata(&final_path).map(|m| m.len() == f.size).unwrap_or(false)
+            && sha256_file(&final_path)? == f.sha256
+        {
             done += f.size;
             progress(done, total);
             continue;
@@ -198,7 +203,8 @@ mod tests {
                     .unwrap_or(0);
                 let slice = &body[start.min(body.len())..];
                 let status = if start > 0 { "206 Partial Content" } else { "200 OK" };
-                write!(stream, "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", slice.len()).unwrap();
+                write!(stream, "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", slice.len())
+                    .unwrap();
                 stream.write_all(slice).unwrap();
             }
         });
@@ -222,7 +228,12 @@ mod tests {
             source: String::new(),
             files: files
                 .iter()
-                .map(|(n, b)| FileSpec { name: n.to_string(), url: format!("{base}/{n}"), sha256: sha(b), size: b.len() as u64 })
+                .map(|(n, b)| FileSpec {
+                    name: n.to_string(),
+                    url: format!("{base}/{n}"),
+                    sha256: sha(b),
+                    size: b.len() as u64,
+                })
                 .collect(),
         }
     }
@@ -235,7 +246,8 @@ mod tests {
         let spec = spec_for(&base, &[("a.json", &a), ("b.onnx", &b)]);
         let dir = tempfile::tempdir().unwrap();
         let mut last = (0, 0);
-        download_spec(&spec, dir.path(), &AtomicBool::new(false), &mut |d, t| last = (d, t), &no_proxy_agent()).unwrap();
+        download_spec(&spec, dir.path(), &AtomicBool::new(false), &mut |d, t| last = (d, t), &no_proxy_agent())
+            .unwrap();
         assert_eq!(last, (200_012, 200_012));
         assert!(is_installed_spec(&spec, dir.path()));
         assert_eq!(std::fs::read(spec.dir(dir.path()).join("b.onnx")).unwrap(), b);
@@ -262,7 +274,8 @@ mod tests {
         let mut spec = spec_for(&base, &[("m.onnx", &body)]);
         spec.files[0].sha256 = sha(b"original");
         let dir = tempfile::tempdir().unwrap();
-        let err = download_spec(&spec, dir.path(), &AtomicBool::new(false), &mut |_, _| {}, &no_proxy_agent()).unwrap_err();
+        let err =
+            download_spec(&spec, dir.path(), &AtomicBool::new(false), &mut |_, _| {}, &no_proxy_agent()).unwrap_err();
         assert!(err.to_string().contains("SHA-256"), "{err}");
         assert!(!spec.dir(dir.path()).join("m.onnx").exists());
         assert!(!spec.dir(dir.path()).join("m.onnx.part").exists());

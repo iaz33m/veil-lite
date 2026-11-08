@@ -60,7 +60,9 @@ pub fn is_installed_spec(spec: &ModelSpec, models_dir: &Path) -> bool {
     let dir = spec.dir(models_dir);
     !spec.files.is_empty()
         && spec.files.iter().all(|f| {
-            std::fs::metadata(dir.join(&f.name)).map(|m| m.is_file() && (f.size == 0 || m.len() == f.size)).unwrap_or(false)
+            std::fs::metadata(dir.join(&f.name))
+                .map(|m| m.is_file() && (f.size == 0 || m.len() == f.size))
+                .unwrap_or(false)
         })
 }
 

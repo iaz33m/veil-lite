@@ -1,0 +1,9 @@
+# Export GLiNER2.5-multi-Decide to ONNX (int8) for Veil's layer 3.
+# Python 3.10–3.12. CPU wheels are enough.
+gliner2>=1.0
+torch>=2.3
+transformers>=4.44
+onnx>=1.16
+onnxruntime>=1.20
+tokenizers>=0.20
+numpy>=1.26

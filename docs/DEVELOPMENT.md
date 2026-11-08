@@ -79,7 +79,7 @@ npm run tauri build  # local installer for the host OS
 The AI layer needs the ONNX Runtime shared library at runtime (`ort` is built with `load-dynamic`).
 `./scripts/fetch-onnxruntime.sh` downloads the official ONNX Runtime release for the host into
 `apps/desktop/src-tauri/resources/onnxruntime/`, where the app bundles it. For a bare engine run, point
-`ORT_DYLIB_PATH` at the library instead.
+`VEIL_ORT_DYLIB` at the library instead.
 
 ### UI work
 

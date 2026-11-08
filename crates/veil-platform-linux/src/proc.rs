@@ -8,7 +8,10 @@ pub fn exe_name(pid: u32) -> Option<String> {
         return None;
     }
     let exe = std::fs::read_link(format!("/proc/{pid}/exe")).ok();
-    let from_exe = exe.as_deref().and_then(Path::file_name).map(|n| n.to_string_lossy().trim_end_matches(" (deleted)").to_string());
+    let from_exe = exe
+        .as_deref()
+        .and_then(Path::file_name)
+        .map(|n| n.to_string_lossy().trim_end_matches(" (deleted)").to_string());
     from_exe.filter(|s| !s.is_empty()).or_else(|| comm(pid))
 }
 

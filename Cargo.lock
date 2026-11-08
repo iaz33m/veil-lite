@@ -3,6 +3,15 @@
 version = 4
 
 [[package]]
+name = "accessibility-sys"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46a6a8e90a1d8b96a48249e7c8f5b4058447bea8847280db7bfccb6dcab6b8e1"
+dependencies = [
+ "core-foundation-sys",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3402,6 +3411,7 @@ dependencies = [
  "parking_lot",
  "percent-encoding",
  "png",
+ "serde",
  "tracing",
  "veil-core",
  "x11rb",
@@ -3412,7 +3422,10 @@ dependencies = [
 name = "veil-platform-macos"
 version = "0.1.0"
 dependencies = [
+ "accessibility-sys",
  "anyhow",
+ "core-foundation",
+ "core-foundation-sys",
  "dispatch2",
  "objc2",
  "objc2-app-kit",

@@ -1,0 +1,12 @@
+# Veil: let members of the `veil` group read input devices and create virtual ones.
+#
+# Veil grabs keyboards and mice (EVIOCGRAB) so it can hold a message for a moment before it is sent,
+# then re-emits the input through uinput. Install:
+#   sudo groupadd -f veil
+#   sudo usermod -aG veil "$USER"
+#   sudo cp 99-veil.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload && sudo udevadm trigger
+# then log out and back in.
+
+KERNEL=="uinput", SUBSYSTEM=="misc", GROUP="veil", MODE="0660", OPTIONS+="static_node=uinput"
+KERNEL=="event[0-9]*", SUBSYSTEM=="input", GROUP="veil", MODE="0660"

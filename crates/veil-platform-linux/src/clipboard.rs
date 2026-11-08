@@ -31,6 +31,7 @@ pub fn parse_uri_list(list: &str) -> Vec<PathBuf> {
 }
 
 /// Plain-text bodies sometimes carry paths (e.g. `x-special/gnome-copied-files`: `copy\nfile:///a`).
+#[allow(dead_code)] // for a future x-special/gnome-copied-files reader
 pub fn parse_gnome_copied_files(body: &str) -> Vec<PathBuf> {
     let mut lines = body.lines();
     match lines.next() {

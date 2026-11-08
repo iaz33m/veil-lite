@@ -68,7 +68,14 @@ impl X11 {
         let root = screen.root;
         let size = (screen.width_in_pixels as f64, screen.height_in_pixels as f64);
         let atoms = Atoms::new(&conn)?.reply()?;
-        let x = Arc::new(X11 { conn, root, atoms, screen: size, at_cache: Mutex::new(HashMap::new()), watched: Arc::new(Watched::default()) });
+        let x = Arc::new(X11 {
+            conn,
+            root,
+            atoms,
+            screen: size,
+            at_cache: Mutex::new(HashMap::new()),
+            watched: Arc::new(Watched::default()),
+        });
         x.refresh_foreground();
         Ok(x)
     }
@@ -80,7 +87,8 @@ impl X11 {
 
     fn prop_u32(&self, w: Window, atom: Atom, ty: impl Into<Atom>) -> Option<u32> {
         let r = self.conn.get_property(false, w, atom, ty, 0, 1).ok()?.reply().ok()?;
-        r.value32()?.next()
+        let v = r.value32()?.next();
+        v
     }
 
     pub fn active_window(&self) -> Option<Window> {
@@ -208,10 +216,17 @@ impl X11 {
 
     fn watch(&self, on_focus: Arc<dyn Fn(&AppContext) + Send + Sync>) -> anyhow::Result<()> {
         let (conn, _) = x11rb::connect(None)?;
-        conn.change_window_attributes(self.root, &ChangeWindowAttributesAux::new().event_mask(EventMask::PROPERTY_CHANGE))?;
+        conn.change_window_attributes(
+            self.root,
+            &ChangeWindowAttributesAux::new().event_mask(EventMask::PROPERTY_CHANGE),
+        )?;
         let xfixes = conn.xfixes_query_version(5, 0).ok().and_then(|c| c.reply().ok()).is_some();
         if xfixes {
-            conn.xfixes_select_selection_input(self.root, self.atoms.XdndSelection, SelectionEventMask::SET_SELECTION_OWNER)?;
+            conn.xfixes_select_selection_input(
+                self.root,
+                self.atoms.XdndSelection,
+                SelectionEventMask::SET_SELECTION_OWNER,
+            )?;
         } else {
             tracing::warn!("XFixes unavailable: drag data can't be tied to new drags");
         }
@@ -224,7 +239,10 @@ impl X11 {
                     let fg = self.watched.foreground.read().clone();
                     if let Some((w, app)) = fg {
                         if watched_window != Some(w) {
-                            let _ = conn.change_window_attributes(w, &ChangeWindowAttributesAux::new().event_mask(EventMask::PROPERTY_CHANGE));
+                            let _ = conn.change_window_attributes(
+                                w,
+                                &ChangeWindowAttributesAux::new().event_mask(EventMask::PROPERTY_CHANGE),
+                            );
                             let _ = conn.flush();
                             watched_window = Some(w);
                         }
@@ -232,7 +250,8 @@ impl X11 {
                     }
                 }
                 Event::PropertyNotify(e)
-                    if Some(e.window) == watched_window && (e.atom == self.atoms._NET_WM_NAME || e.atom == self.atoms.WM_NAME) =>
+                    if Some(e.window) == watched_window
+                        && (e.atom == self.atoms._NET_WM_NAME || e.atom == self.atoms.WM_NAME) =>
                 {
                     let title = self.title(e.window);
                     if let Some((w, app)) = self.watched.foreground.write().as_mut() {
@@ -280,8 +299,20 @@ fn read_selection(selection: Atom, target: Atom, atoms: &Atoms) -> Option<Vec<u8
         return None;
     }
     let win = conn.generate_id().ok()?;
-    conn.create_window(COPY_DEPTH_FROM_PARENT, win, root, -10, -10, 1, 1, 0, WindowClass::INPUT_OUTPUT, 0, &CreateWindowAux::new())
-        .ok()?;
+    conn.create_window(
+        COPY_DEPTH_FROM_PARENT,
+        win,
+        root,
+        -10,
+        -10,
+        1,
+        1,
+        0,
+        WindowClass::INPUT_OUTPUT,
+        0,
+        &CreateWindowAux::new(),
+    )
+    .ok()?;
     conn.delete_property(win, atoms.VEIL_SEL).ok()?;
     conn.convert_selection(win, selection, target, atoms.VEIL_SEL, CURRENT_TIME).ok()?;
     conn.flush().ok()?;

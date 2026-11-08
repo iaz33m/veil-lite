@@ -83,7 +83,14 @@ pub struct Translator {
 
 impl Translator {
     pub fn new(keymap: Arc<dyn Keymap>) -> Self {
-        Translator { keymap, mods: ModState::default(), swallowed_keys: HashSet::new(), last_click: None, left_down: false, moved: false }
+        Translator {
+            keymap,
+            mods: ModState::default(),
+            swallowed_keys: HashSet::new(),
+            last_click: None,
+            left_down: false,
+            moved: false,
+        }
     }
 
     /// Classify one raw event. `pos` gives the pointer position (only called for button events).
@@ -95,7 +102,11 @@ impl Translator {
                     self.left_down = true;
                     self.moved = false;
                     let clicks = match self.last_click {
-                        Some((t, p, n)) if now.duration_since(t) < DOUBLE_CLICK && p.distance(&at) <= DOUBLE_CLICK_SLOP => n + 1,
+                        Some((t, p, n))
+                            if now.duration_since(t) < DOUBLE_CLICK && p.distance(&at) <= DOUBLE_CLICK_SLOP =>
+                        {
+                            n + 1
+                        }
                         _ => 1,
                     };
                     self.last_click = Some((now, at, clicks));
@@ -124,6 +135,13 @@ impl Translator {
             }
             EV_REL if ev.code == REL_X || ev.code == REL_Y => {
                 if self.left_down && ev.value != 0 {
+                    self.moved = true;
+                }
+                Step::Pass
+            }
+            // Touchpads and tablets report absolute positions (ABS_X/Y, ABS_MT_POSITION_X/Y).
+            EV_ABS if matches!(ev.code, 0x00 | 0x01 | 0x35 | 0x36) => {
+                if self.left_down {
                     self.moved = true;
                 }
                 Step::Pass
@@ -258,13 +276,21 @@ mod tests {
         );
         assert_eq!(
             t.step(&key(KEY_V, 1), now, &mut pos),
-            Step::Ask(InputEvent::KeyDown { key: Key::V, mods: Modifiers { ctrl: true, ..Modifiers::NONE }, text: Some("v".into()) })
+            Step::Ask(InputEvent::KeyDown {
+                key: Key::V,
+                mods: Modifiers { ctrl: true, ..Modifiers::NONE },
+                text: Some("v".into())
+            })
         );
         t.step(&key(KEY_LEFTCTRL, 0), now, &mut pos);
         t.step(&key(KEY_LEFTSHIFT, 1), now, &mut pos);
         assert_eq!(
             t.step(&key(KEY_A, 1), now, &mut pos),
-            Step::Ask(InputEvent::KeyDown { key: Key::A, mods: Modifiers { shift: true, ..Modifiers::NONE }, text: Some("A".into()) })
+            Step::Ask(InputEvent::KeyDown {
+                key: Key::A,
+                mods: Modifiers { shift: true, ..Modifiers::NONE },
+                text: Some("A".into())
+            })
         );
     }
 
@@ -292,13 +318,19 @@ mod tests {
         let mut t = tr();
         let t0 = Instant::now();
         let mut pos = || Point::new(10.0, 10.0);
-        assert_eq!(t.step(&key(BTN_LEFT, 1), t0, &mut pos), Step::Ask(InputEvent::MouseDown { at: Point::new(10.0, 10.0), clicks: 1 }));
+        assert_eq!(
+            t.step(&key(BTN_LEFT, 1), t0, &mut pos),
+            Step::Ask(InputEvent::MouseDown { at: Point::new(10.0, 10.0), clicks: 1 })
+        );
         assert_eq!(t.end_frame(&mut pos), None, "no motion yet");
         t.step(&Raw::new(EV_REL, REL_X, 5), t0, &mut pos);
         assert_eq!(t.end_frame(&mut pos), Some(InputEvent::MouseDrag { at: Point::new(10.0, 10.0) }));
         assert!(matches!(t.step(&key(BTN_LEFT, 0), t0, &mut pos), Step::Ask(InputEvent::MouseUp { .. })));
         let t1 = t0 + Duration::from_millis(150);
-        assert_eq!(t.step(&key(BTN_LEFT, 1), t1, &mut pos), Step::Ask(InputEvent::MouseDown { at: Point::new(10.0, 10.0), clicks: 2 }));
+        assert_eq!(
+            t.step(&key(BTN_LEFT, 1), t1, &mut pos),
+            Step::Ask(InputEvent::MouseDown { at: Point::new(10.0, 10.0), clicks: 2 })
+        );
         t.step(&key(BTN_LEFT, 0), t1, &mut pos);
         let t2 = t1 + Duration::from_secs(1);
         assert!(matches!(t.step(&key(BTN_LEFT, 1), t2, &mut pos), Step::Ask(InputEvent::MouseDown { clicks: 1, .. })));

@@ -284,7 +284,9 @@ mod tests {
 
     #[test]
     fn keys_round_trip() {
-        for code in [KEY_ENTER, KEY_KPENTER, KEY_A, KEY_V, KEY_INSERT, KEY_BACKSPACE, KEY_DELETE, KEY_ESC, KEY_TAB, 44, 200] {
+        for code in
+            [KEY_ENTER, KEY_KPENTER, KEY_A, KEY_V, KEY_INSERT, KEY_BACKSPACE, KEY_DELETE, KEY_ESC, KEY_TAB, 44, 200]
+        {
             assert_eq!(evdev_code(veil_key(code)), code);
         }
         assert_eq!(veil_key(KEY_ENTER), Key::Enter);

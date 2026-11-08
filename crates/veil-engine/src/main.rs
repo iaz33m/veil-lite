@@ -69,9 +69,7 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
     let result = match cli.command.unwrap_or(Command::Run) {
         Command::Run => run(cli.home, &cli.log_level).map(|_| ExitCode::SUCCESS),
-        Command::Check { target, json, show_values, no_model } => {
-            check(cli.home, &target, json, show_values, no_model)
-        }
+        Command::Check { target, json, show_values, no_model } => check(cli.home, &target, json, show_values, no_model),
         Command::Policy { print_default, validate } => policy_cmd(print_default, validate),
         Command::Status => status(cli.home),
         Command::DownloadModel => download_model(cli.home),
@@ -116,7 +114,7 @@ fn run(home: Option<PathBuf>, log_level: &str) -> anyhow::Result<()> {
     tracing::info!("platform provider: {}", platform.name());
 
     let shared = Arc::new(Shared::new(policy.clone()));
-    scanner_keywords(&*scanner, &policy);
+    scanner_keywords(&scanner, &policy);
     let activity = Arc::new(ActivityLog::new(&paths.activity_file()));
     let engine = Arc::new(Engine::new(platform.clone(), scanner.clone(), shared.clone(), activity));
     let (jobs, job_rx) = crossbeam_channel::bounded(1024);
@@ -239,7 +237,13 @@ impl ModelStore for DetectModels {
 
 // ----- check -----
 
-fn check(home: Option<PathBuf>, target: &str, json: bool, show_values: bool, no_model: bool) -> anyhow::Result<ExitCode> {
+fn check(
+    home: Option<PathBuf>,
+    target: &str,
+    json: bool,
+    show_values: bool,
+    no_model: bool,
+) -> anyhow::Result<ExitCode> {
     let paths = paths(home)?;
     let mut policy = if paths.policy_file().exists() { Policy::load(&paths.policy_file())? } else { Policy::default() };
     if no_model {
@@ -366,7 +370,7 @@ fn download_model(home: Option<PathBuf>) -> anyhow::Result<ExitCode> {
     let cancel = AtomicBool::new(false);
     let mut last = u64::MAX;
     veil_detect::model::download(&dir, &cancel, &mut |done, total| {
-        let pct = if total == 0 { 0 } else { done * 100 / total };
+        let pct = (done * 100).checked_div(total).unwrap_or(0);
         if pct != last {
             last = pct;
             eprint!("\rDownloading the AI model… {pct}% ({} / {} MB)", done / 1_000_000, total / 1_000_000);
