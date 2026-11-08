@@ -236,12 +236,12 @@ mod tests {
         assert_eq!(parse(&plan, Some(2), ""), Choice::DontSend);
 
         let p = prompt(PromptKind::Upload, vec![Choice::DontSend, Choice::SendAnyway]);
-        let plan = plan(Backend::Kdialog, &p);
+        let plan = super::plan(Backend::Kdialog, &p);
         assert!(plan.args.contains(&"--warningyesno".to_string()));
         assert_eq!(parse(&plan, Some(0), ""), Choice::SendAnyway);
         assert_eq!(parse(&plan, Some(1), ""), Choice::DontSend);
 
         let p = prompt(PromptKind::BlockNotice, vec![Choice::Ok]);
-        assert_eq!(parse(&plan(Backend::Kdialog, &p), Some(0), ""), Choice::Ok);
+        assert_eq!(parse(&super::plan(Backend::Kdialog, &p), Some(0), ""), Choice::Ok);
     }
 }
