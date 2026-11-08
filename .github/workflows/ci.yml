@@ -170,7 +170,7 @@ jobs:
       - name: Install UI dependencies
         working-directory: apps/desktop
         run: npm ci || npm install
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Placeholders: unsigned builds when the secrets are absent.
