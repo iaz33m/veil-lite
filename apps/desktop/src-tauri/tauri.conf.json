@@ -47,6 +47,7 @@
       "icons/icon.ico"
     ],
     "externalBin": ["binaries/veil-engine"],
+    "resources": ["resources/onnxruntime/"],
     "createUpdaterArtifacts": false,
     "macOS": {
       "minimumSystemVersion": "12.0"

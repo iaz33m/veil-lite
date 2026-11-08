@@ -158,7 +158,8 @@ pub fn ort_library_name() -> &'static str {
 }
 
 /// Where to look for ONNX Runtime: `$VEIL_ORT_DYLIB`, next to the executable, the macOS app bundle's
-/// `Resources`/`Frameworks`, `../lib/veil` (Linux packages), then the models directory.
+/// `Resources`/`Frameworks`, the bundled `resources/onnxruntime` directory, `../lib/veil` (Linux
+/// packages), then the models directory.
 pub fn ort_dylib_candidates(models_dir: &Path) -> Vec<PathBuf> {
     let name = ort_library_name();
     let mut out = Vec::new();
@@ -167,16 +168,23 @@ pub fn ort_dylib_candidates(models_dir: &Path) -> Vec<PathBuf> {
     }
     if let Some(exe_dir) = std::env::current_exe().ok().and_then(|p| p.parent().map(Path::to_path_buf)) {
         out.push(exe_dir.join(name));
+        out.push(exe_dir.join("onnxruntime").join(name));
         if cfg!(target_os = "macos") {
-            out.push(exe_dir.join("../Resources").join(name));
-            out.push(exe_dir.join("../Resources/resources").join(name));
+            let resources = exe_dir.join("../Resources");
+            out.push(resources.join(name));
+            out.push(resources.join("onnxruntime").join(name));
+            out.push(resources.join("resources").join(name));
+            out.push(resources.join("resources").join("onnxruntime").join(name));
             out.push(exe_dir.join("../Frameworks").join(name));
         }
         if cfg!(target_os = "linux") {
             out.push(exe_dir.join("../lib/veil").join(name));
             out.push(exe_dir.join(format!("{name}.1")));
         }
-        out.push(exe_dir.join("resources").join(name));
+        let bundled = exe_dir.join("resources");
+        out.push(bundled.join(name));
+        out.push(bundled.join("onnxruntime").join(name));
+        out.push(bundled.join("resources").join("onnxruntime").join(name));
     }
     if cfg!(target_os = "linux") {
         out.push(PathBuf::from("/usr/lib/veil").join(name));
@@ -247,7 +255,9 @@ mod tests {
     #[test]
     fn ort_candidates_include_env_and_models_dir() {
         let c = ort_dylib_candidates(Path::new("/m"));
-        assert!(c.contains(&Path::new("/m").join(ort_library_name())));
+        let name = ort_library_name();
+        assert!(c.contains(&Path::new("/m").join(name)));
+        assert!(c.iter().any(|p| p.ends_with(Path::new("resources").join("onnxruntime").join(name))));
         assert_eq!(find_ort_dylib(Some(Path::new("/definitely/missing.so")), Path::new("/m")), None);
     }
 }

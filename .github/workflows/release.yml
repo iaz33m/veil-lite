@@ -4,9 +4,18 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to build and publish (must already exist, for example v0.1.0)
+        required: true
+        type: string
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+  cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,97 +25,125 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.release.outputs.id }}
+      tag: ${{ steps.release.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
       - id: release
         uses: actions/github-script@v7
         with:
           script: |
-            const tag = context.ref.replace('refs/tags/', '');
-            const { data } = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: tag,
-              name: `Veil ${tag}`,
-              draft: true,
-              prerelease: tag.includes('-'),
-              generate_release_notes: true,
-            });
-            core.setOutput('id', data.id);
+            const tag = context.eventName === 'workflow_dispatch'
+              ? '${{ inputs.tag }}'
+              : context.ref.replace('refs/tags/', '');
+            if (!/^v\d+\.\d+\.\d+/.test(tag)) {
+              core.setFailed(`Release tag must look like v0.1.0 (got ${tag})`);
+              return;
+            }
+            const { owner, repo } = context.repo;
+            let release;
+            try {
+              ({ data: release } = await github.rest.repos.getReleaseByTag({ owner, repo, tag }));
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              ({ data: release } = await github.rest.repos.createRelease({
+                owner,
+                repo,
+                tag_name: tag,
+                target_commitish: context.sha,
+                name: `Veil ${tag}`,
+                draft: true,
+                prerelease: tag.includes('-'),
+                generate_release_notes: true,
+                body: [
+                  'macOS 12+ universal (Apple silicon and Intel) and Windows 10/11 x64.',
+                  'Linux installers are not part of this release.',
+                  '',
+                  'The installers are unsigned unless the Apple, Windows, and updater secrets were set for this run. On macOS, open the app from System Settings if Gatekeeper blocks the first launch. On Windows, SmartScreen may warn about the installer.',
+                ].join('\n'),
+              }));
+            }
+            core.setOutput('id', String(release.id));
+            core.setOutput('tag', tag);
 
   build:
+    name: ${{ matrix.name }}
     needs: create-release
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          - name: macOS universal
+            platform: macos-latest
             target: universal-apple-darwin
-            args: --target universal-apple-darwin          # .app + .dmg
-          - platform: windows-latest
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
+            args: --target universal-apple-darwin
+          - name: Windows x64
+            platform: windows-latest
             target: x86_64-pc-windows-msvc
-            args: --bundles msi,nsis
-          - platform: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-            args: --bundles deb,rpm,appimage
+            rust_targets: ""
+            args: --bundles nsis,msi
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-release.outputs.tag }}
+
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target == 'universal-apple-darwin' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.rust_targets }}
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
             . -> target
             apps/desktop/src-tauri -> target
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Linux system packages
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libudev-dev libdbus-1-dev libxkbcommon-dev \
-            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
-      - name: Tests
-        run: cargo test --workspace --release
-      - name: Sidecar and ONNX Runtime
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: ONNX Runtime
         shell: bash
-        run: |
-          scripts/prepare-sidecar.sh --release --target ${{ matrix.target }}
-          scripts/fetch-onnxruntime.sh --target ${{ matrix.target }}
+        run: scripts/fetch-onnxruntime.sh --target ${{ matrix.target }}
+
       - name: Install UI dependencies
         working-directory: apps/desktop
-        run: npm ci || npm install
-      - uses: tauri-apps/tauri-action@v0
+        run: npm ci
+
+      - name: Build installers and upload them to the release
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Updater signing (required for the updater manifest).
+          # Empty secrets leave the build unsigned. Set them to sign and notarize.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # macOS Developer ID signing and notarization.
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # Windows Authenticode: configure bundle.windows.signCommand in tauri.conf.json to use
-          # these (e.g. Azure Trusted Signing or a code-signing certificate).
           WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         with:
           projectPath: apps/desktop
           releaseId: ${{ needs.create-release.outputs.release_id }}
-          includeUpdaterJson: true
-          args: ${{ matrix.args }}
+          includeUpdaterJson: false
+          args: ${{ matrix.args }}${{ matrix.target == 'universal-apple-darwin' && secrets.APPLE_CERTIFICATE == '' && ' --no-sign' || '' }}
 
   sbom:
+    name: SBOM
     needs: create-release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-release.outputs.tag }}
       - uses: dtolnay/rust-toolchain@stable
       - name: Generate SBOM (CycloneDX)
         run: |
@@ -115,14 +152,23 @@ jobs:
           mkdir sbom && find . -name '*.cdx.json' -not -path './target/*' -exec cp --parents {} sbom/ \;
           tar -czf veil-sbom.tar.gz sbom
       - name: Attach SBOM
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ needs.create-release.outputs.tag }}" veil-sbom.tar.gz --clobber
+
+  publish:
+    name: Publish release
+    needs: [create-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish the release once both installers are attached
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
-            await github.rest.repos.uploadReleaseAsset({
+            await github.rest.repos.updateRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: ${{ needs.create-release.outputs.release_id }},
-              name: 'veil-sbom.tar.gz',
-              data: fs.readFileSync('veil-sbom.tar.gz'),
+              draft: false,
+              make_latest: 'true',
             });

@@ -51,7 +51,15 @@ fi
 mkdir -p "$work/x"
 case "$asset" in
   *.tgz) tar -xzf "$work/$asset" -C "$work/x" ;;
-  *.zip) unzip -q "$work/$asset" -d "$work/x" ;;
+  *.zip)
+    if command -v unzip >/dev/null; then
+      unzip -q "$work/$asset" -d "$work/x"
+    elif [[ -x /c/Windows/System32/tar.exe ]]; then
+      /c/Windows/System32/tar.exe -xf "$work/$asset" -C "$work/x"
+    else
+      tar -xf "$work/$asset" -C "$work/x"
+    fi
+    ;;
 esac
 
 found="$(find "$work/x" -type f -name "$lib" | head -n1)"

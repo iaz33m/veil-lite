@@ -132,6 +132,8 @@ typical, < 5 ms max; send decision with cached verdict < 50 ms p95; L3 < 300 ms 
 
 ## Releasing
 
-Tagged `v*` commits run `.github/workflows/release.yml`: build the sidecar per target, fetch ONNX Runtime,
-build installers with `tauri-action`, sign/notarize (secrets), upload to a draft GitHub release with an
-SBOM. A maintainer reviews and publishes the draft.
+Pushing a `v*` tag runs `.github/workflows/release.yml`. It builds the macOS universal app (DMG) and the
+Windows x64 installers (NSIS and MSI), fetches ONNX Runtime into the bundle, and publishes those files on
+the GitHub release. Linux installers are not built yet. Signing and notarization run only when the Apple,
+Windows, and updater secrets are set; otherwise the installers are unsigned. An SBOM is attached alongside
+the installers.

@@ -54,8 +54,11 @@ mkdirSync(outDir, { recursive: true });
 const out = join(outDir, `veil-engine-${triple}${exe(triple)}`);
 
 if (triple === "universal-apple-darwin") {
-  const parts = ["aarch64-apple-darwin", "x86_64-apple-darwin"].map(engineFor);
+  const triples = ["aarch64-apple-darwin", "x86_64-apple-darwin"];
+  const parts = triples.map(engineFor);
   execFileSync("lipo", ["-create", "-output", out, ...parts], { stdio: "inherit" });
+  // A universal `tauri build` compiles each architecture on its own and looks up that triple's sidecar.
+  triples.forEach((t, i) => copyFileSync(parts[i], join(outDir, `veil-engine-${t}`)));
 } else {
   copyFileSync(engineFor(triple), out);
 }

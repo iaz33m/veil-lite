@@ -6,6 +6,8 @@ apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/gen/
 apps/desktop/src-tauri/binaries/*
 !apps/desktop/src-tauri/binaries/.gitkeep
+apps/desktop/src-tauri/resources/onnxruntime/*
+!apps/desktop/src-tauri/resources/onnxruntime/.gitkeep
 tools/model-export/.venv/
 tools/model-export/out/
 *.onnx
