@@ -27,7 +27,7 @@ serde_yaml_ng = "0.10"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 crossbeam-channel = "0.5"
-parking_lot = "0.12"
+parking_lot = "0.13"
 regex = "1"
 aho-corasick = "1"
 unicode-normalization = "0.1"
